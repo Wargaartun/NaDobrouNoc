@@ -1,0 +1,2 @@
+# Veřejná verze nepotřebuje žádné knihovny navíc – jen Python 3.10+ se standardní knihovnou.
+# Pro vlastní užití s vyhledáváním na YouTube: pip install -r requirements-vlastni.txt

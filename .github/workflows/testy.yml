@@ -1,0 +1,40 @@
+# Automatické testy při každém nahrání a pull requestu.
+# Testy jsou offline – zdroje (ČT, YouTube) nahrazují vzorky v tests/vzorky.
+name: Testy
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  testy:
+    name: Testy (${{ matrix.os }}, Python ${{ matrix.python }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python: ["3.10", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - run: python -m pip install -r requirements-vyvoj.txt
+      - run: python -m pytest -q --ignore=tests/test_rozhrani.py
+
+  rozhrani:
+    name: Rozhraní v prohlížeči
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -r requirements-vyvoj.txt playwright
+      - run: python -m playwright install --with-deps chromium
+      - run: python -m pytest -q tests/test_rozhrani.py

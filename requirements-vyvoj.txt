@@ -1,0 +1,3 @@
+# Pro vývoj a testy (aplikace sama žádné knihovny nepotřebuje).
+pytest>=8
+# Test rozhraní navíc potřebuje: pip install playwright && python -m playwright install chromium

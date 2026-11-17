@@ -1,0 +1,8 @@
+{
+  "verze_souboru": 1,
+  "graphql_url": "https://api.ceskatelevize.cz/graphql/",
+  "graphql_klient": "iVysilaniWeb",
+  "graphql_verze": "1.209.1",
+  "hash_get_episodes": "863c22a0be8a036256d3ec160e7c917876cf46c8827746e5736442aba0f54269",
+  "kategorie_vecernicky": "https://www.ceskatelevize.cz/ivysilani/kategorie/4118-pro-deti/4120-vecernicky/"
+}
