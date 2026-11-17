@@ -44,7 +44,9 @@ def test_prenos_starych_dat(tmp_path, monkeypatch, cista_data):
 def test_zaloha_pri_poskozeni(cista_data):
     katalog.uloz({**katalog._prazdny(), "znelka": "aaaaaaaaaaa"})
     katalog.uloz({**katalog._prazdny(), "znelka": "bbbbbbbbbbb"})
-    katalog.SOUBOR.write_text("{rozbité")
+    katalog.SOUBOR.write_bytes(b"{rozbit\xe9")          # neplatný JSON a navíc neplatné UTF-8
+    assert katalog.nacti()["znelka"] == "aaaaaaaaaaa"
+    katalog.SOUBOR.write_text("{rozbité", encoding="utf-8")
     assert katalog.nacti()["znelka"] == "aaaaaaaaaaa"
 
 

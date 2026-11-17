@@ -80,7 +80,7 @@ def nacti() -> dict:
                     data["nastaveni"].setdefault("kontrola_verze", True)
                     data.setdefault("znelka", None)
                     return data
-                except (json.JSONDecodeError, OSError):
+                except (ValueError, OSError):   # neplatný JSON i neplatné UTF-8 (UnicodeDecodeError)
                     log(f"⚠️  {soubor.name} je poškozený, zkouším zálohu")
         return _prazdny()
 
