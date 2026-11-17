@@ -1,0 +1,3 @@
+# Jen pro vlastní užití: yt-dlp umožní serveru číst YouTube playlisty a vyhledávat chybějící díly.
+# Jde mimo podmínky YouTube, proto ho veřejná verze nepoužívá.
+yt-dlp

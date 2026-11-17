@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+
+# data ze starších verzí (od 0.4 jsou v profilu uživatele)
+data/
+*.log
+server.pid
+
+# budoucí sestavené balíčky
+build/
+dist/

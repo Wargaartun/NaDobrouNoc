@@ -1,0 +1,46 @@
+# Jednou týdně ověří, že aplikace pořád umí číst skutečný web České televize.
+# Když ČT změní web nebo API, testy selžou a tahle akce založí hlášení (issue),
+# aby se to opravilo dřív, než si toho všimnou uživatelé.
+name: Kontrola webu ČT
+
+on:
+  schedule:
+    - cron: "17 5 * * 1"     # každé pondělí v 5:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  zivy-web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -r requirements-vyvoj.txt
+      - run: python -m pytest -v --zivy tests/test_zivy_web.py
+
+      - name: Založit hlášení o změně webu ČT
+        if: failure() && github.event_name == 'schedule'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const nazev = 'Web ČT se změnil – kontrola selhala';
+            const otevrene = await github.rest.issues.listForRepo({
+              owner: context.repo.owner, repo: context.repo.repo, state: 'open', labels: 'web-ct',
+            });
+            if (otevrene.data.some(i => i.title === nazev)) return;   // už je nahlášeno
+            await github.rest.issues.create({
+              owner: context.repo.owner, repo: context.repo.repo, title: nazev, labels: ['web-ct'],
+              body: [
+                'Týdenní kontrola proti skutečnému webu České televize selhala.',
+                '',
+                `Výpis: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+                '',
+                'Postup opravy je v CONTRIBUTING.md, část „Když se změní web ČT“.',
+                'Často stačí aktualizovat otisk dotazu v ct_nastaveni.json – aplikace si ho pak stáhne sama.',
+              ].join('\n'),
+            });

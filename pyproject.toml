@@ -1,0 +1,17 @@
+[project]
+name = "na-dobrou-noc"
+version = "0.5.0"
+description = "Večerníčky a pohádky před spaním z iVysílání a YouTube – lokální aplikace pro rodiče"
+readme = "README.md"
+license = { text = "GPL-3.0-or-later" }
+requires-python = ">=3.10"
+dependencies = []
+
+[project.optional-dependencies]
+vlastni = ["yt-dlp"]   # jen pro vlastní užití – jde mimo podmínky YouTube
+
+[project.urls]
+Repository = "https://github.com/Wargaartun/NaDobrouNoc"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
