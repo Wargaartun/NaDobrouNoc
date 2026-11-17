@@ -16,8 +16,15 @@ umí pustit „další díl“ a místo doporučených videí ukáže na konci �
 
 ## Stažení
 
-Hotové instalátory pro **Windows** a **Linux** se připravují. Do té doby jde aplikaci
-spustit ze zdrojového kódu (Python 3.10 a novější) – viz níže.
+Nejnovější verze je na stránce **[Vydání (Releases)](https://github.com/Wargaartun/NaDobrouNoc/releases/latest)**:
+
+- **Windows 10 a 11:** `NaDobrouNoc-…-instalator.exe` – stáhnout, spustit, klikat na Další.
+  Windows napoprvé ukáže okno „Systém Windows ochránil váš počítač“, protože aplikace nemá placený
+  podpis: klikni na **Další informace** → **Přesto spustit**.
+- **Linux:** `NaDobrouNoc-…-x86_64.AppImage` – povolit spouštění (Vlastnosti → Oprávnění) a spustit dvojklikem.
+
+Podrobný návod je u každého vydání. Python ani nic dalšího instalovat nemusíš.
+Aplikace sama upozorní, když vyjde nová verze.
 
 ## Co aplikace umí
 
@@ -30,6 +37,8 @@ spustit ze zdrojového kódu (Python 3.10 a novější) – viz níže.
 - **Přístup z mobilu** jako vypínač ve Správě.
 
 ## Spuštění ze zdrojového kódu
+
+Pro vývoj nebo když nechceš instalátor (Python 3.10 a novější).
 
 ### Linux (Mint, Ubuntu)
 

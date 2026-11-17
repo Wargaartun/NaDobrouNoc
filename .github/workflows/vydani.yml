@@ -1,0 +1,119 @@
+# Sestavení instalátorů pro Windows a Linux.
+#
+# * Pull request, který mění aplikaci nebo balení: sestaví oba balíčky a nabídne je ke stažení
+#   jako „artifacts“ (pro vyzkoušení před vydáním).
+# * Ruční spuštění (Actions → Sestavení → Run workflow): totéž.
+# * Tag vX.Y.Z: sestaví balíčky a založí KONCEPT vydání (Release) s návodem. Vydání zveřejníš
+#   ručně tlačítkem „Publish release“ – teprve pak ho uvidí kontrola nové verze v aplikaci.
+name: Sestavení
+
+on:
+  push:
+    tags: ["v*"]
+  pull_request:
+    paths:
+      - "*.py"
+      - "zdroje/**"
+      - "static/**"
+      - "baleni/**"
+      - "ct_nastaveni.json"
+      - ".github/workflows/vydani.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    name: Windows – instalátor
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: PyInstaller
+        run: |
+          python -m pip install "pyinstaller>=6.10,<7"
+          python -m PyInstaller --noconfirm baleni/na_dobrou_noc.spec
+      - name: Kontrolní spuštění zabaleného programu
+        shell: pwsh
+        run: |
+          $env:NADOBROUNOC_DATA = Join-Path $env:RUNNER_TEMP "nadobrounoc-data"
+          $p = Start-Process -FilePath "dist\NaDobrouNoc\NaDobrouNoc.exe" -ArgumentList "--kontrola", "--port", "8123" -Wait -PassThru
+          Get-Content (Join-Path $env:NADOBROUNOC_DATA "server.log")
+          if ($p.ExitCode -ne 0) { throw "Kontrolní spuštění selhalo (kód $($p.ExitCode))" }
+      - name: Instalátor (Inno Setup)
+        shell: pwsh
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { choco install innosetup -y --no-progress }
+          $verze = python -c "import cesty; print(cesty.VERZE)"
+          & $iscc "/DVerze=$verze" "baleni\windows\NaDobrouNoc.iss"
+          if ($LASTEXITCODE -ne 0) { throw "Inno Setup selhal" }
+      - name: Tichá instalace a kontrola nainstalovaného programu
+        shell: pwsh
+        run: |
+          $instalator = Get-ChildItem dist\NaDobrouNoc-*-instalator.exe | Select-Object -First 1
+          $cil = Join-Path $env:RUNNER_TEMP "instalace"
+          Start-Process -FilePath $instalator.FullName -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/DIR=$cil" -Wait
+          $env:NADOBROUNOC_DATA = Join-Path $env:RUNNER_TEMP "nadobrounoc-data2"
+          $p = Start-Process -FilePath (Join-Path $cil "NaDobrouNoc.exe") -ArgumentList "--kontrola", "--port", "8124" -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "Nainstalovaný program neprošel kontrolou" }
+          Start-Process -FilePath (Join-Path $cil "unins000.exe") -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES" -Wait
+          if (Test-Path (Join-Path $cil "NaDobrouNoc.exe")) { throw "Odinstalace nesmazala program" }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: dist/NaDobrouNoc-*-instalator.exe
+          if-no-files-found: error
+
+  linux:
+    name: Linux – AppImage
+    runs-on: ubuntu-22.04      # starší glibc = AppImage poběží i na starších distribucích
+    steps:
+      - uses: actions/checkout@v4
+      - name: Python s tkinterem
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-venv python3-tk
+          python3 -m venv .venv-baleni
+          .venv-baleni/bin/pip install "pyinstaller>=6.10,<7"
+      - name: PyInstaller
+        run: .venv-baleni/bin/python -m PyInstaller --noconfirm baleni/na_dobrou_noc.spec
+      - name: AppImage
+        run: bash baleni/linux/sestav-appimage.sh "$(python3 -c 'import cesty; print(cesty.VERZE)')"
+      - name: Kontrolní spuštění AppImage
+        run: |
+          export NADOBROUNOC_DATA="$RUNNER_TEMP/nadobrounoc-data"
+          APPIMAGE_EXTRACT_AND_RUN=1 ./dist/NaDobrouNoc-*-x86_64.AppImage --kontrola --port 8125
+          cat "$NADOBROUNOC_DATA/server.log"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux
+          path: dist/NaDobrouNoc-*-x86_64.AppImage
+          if-no-files-found: error
+
+  vydani:
+    name: Koncept vydání
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [windows, linux]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Kontrolní součty
+        run: cd dist && sha256sum NaDobrouNoc-* > SHA256SUMS.txt && cat SHA256SUMS.txt
+      - uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          name: Na dobrou noc ${{ github.ref_name }}
+          body_path: baleni/poznamky-k-vydani.md
+          files: |
+            dist/NaDobrouNoc-*
+            dist/SHA256SUMS.txt

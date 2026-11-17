@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Na dobrou noc
+Comment=Večerníčky a pohádky před spaním z iVysílání a YouTube
+Exec=NaDobrouNoc
+Icon=na-dobrou-noc
+Terminal=false
+Categories=AudioVideo;Video;
