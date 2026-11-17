@@ -65,8 +65,33 @@ Změnila se struktura stránek. Ulož si aktuální stránku, porovnej ji se vzo
 a uprav `zdroje/ivysilani.py`. Vzorek pak nahraď novým (stačí zkrácená data z `__NEXT_DATA__`),
 ať testy hlídají novou podobu.
 
+## Instalátory
+
+Sestavují se na GitHubu (`.github/workflows/vydani.yml`, soubory v `baleni/`):
+
+| Systém | Jak | Výsledek |
+|---|---|---|
+| Windows | PyInstaller (`baleni/na_dobrou_noc.spec`) + Inno Setup (`baleni/windows/NaDobrouNoc.iss`) | `NaDobrouNoc-X.Y.Z-instalator.exe` |
+| Linux | PyInstaller na Ubuntu 22.04 + `baleni/linux/sestav-appimage.sh` | `NaDobrouNoc-X.Y.Z-x86_64.AppImage` |
+
+Každé sestavení zabalený program spustí s `--kontrola` (server musí odpovědět), na Windows navíc
+tiše nainstaluje, zkontroluje a odinstaluje. Pull request, který mění aplikaci nebo balení, sestaví
+oba balíčky a nabídne je ke stažení v záložce **Checks → Sestavení → Artifacts** – tak se dají
+vyzkoušet před vydáním.
+
+Místní sestavení (pro ladění):
+
+```bash
+python -m pip install "pyinstaller>=6.10,<7"
+python -m PyInstaller --noconfirm baleni/na_dobrou_noc.spec
+dist/NaDobrouNoc/NaDobrouNoc --kontrola          # Windows: dist\NaDobrouNoc\NaDobrouNoc.exe --kontrola
+```
+
 ## Vydání nové verze
 
-1. Zvyš `VERZE` v `cesty.py` a `version` v `pyproject.toml`, doplň `CHANGELOG.md`.
-2. Vytvoř na GitHubu vydání (Release) s tagem `vX.Y.Z`. Aplikace uživatelům do jednoho dne
-   ukáže upozornění na novou verzi.
+1. Zvyš `VERZE` v `cesty.py` a `version` v `pyproject.toml`, doplň `CHANGELOG.md`, sluč do `main`.
+2. Vytvoř a nahraj tag: `git tag v0.6.0 && git push origin v0.6.0`
+   (nebo na GitHubu: Releases → Draft a new release → nový tag).
+3. Workflow **Sestavení** založí **koncept vydání** s instalátory, kontrolními součty a návodem
+   (`baleni/poznamky-k-vydani.md`). Zkontroluj ho a klikni na **Publish release**.
+4. Až po zveřejnění ho uvidí kontrola nové verze – uživatelům se do jednoho dne ukáže upozornění.

@@ -1,0 +1,4 @@
+#!/bin/sh
+# Spouštěč uvnitř AppImage: pustí program zabalený PyInstallerem.
+HERE="$(dirname "$(readlink -f "$0")")"
+exec "$HERE/usr/lib/NaDobrouNoc/NaDobrouNoc" "$@"

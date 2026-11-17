@@ -72,3 +72,29 @@ def test_kontrola_verze(monkeypatch, cista_data):
 
 def test_kontrola_verze_bez_internetu():
     assert aktualizace.zkontroluj(vynutit=True) is None
+
+
+def test_kontrolni_spusteni(okno):
+    assert okno.kontrola(8790) == 0
+
+
+def test_vypis_do_souboru_v_zabalenem_programu(okno, monkeypatch, cista_data):
+    monkeypatch.setattr(cesty, "ZABALENO", True)
+    monkeypatch.setattr(sys, "stdout", None)        # Windows bez konzole
+    monkeypatch.setattr(sys, "stderr", None)
+    okno.nastav_vypis()
+    print("ahoj z testu")
+    sys.stdout.flush()
+    sys.stdout.close()                               # na Windows nejde smazat otevřený soubor
+    log = (cista_data / "server.log").read_text("utf-8")
+    assert "spuštění Na dobrou noc" in log and "ahoj z testu" in log
+
+
+def test_prostredi_pro_prohlizec_na_linuxu(okno, monkeypatch):
+    monkeypatch.setattr(cesty, "ZABALENO", True)
+    monkeypatch.setattr(sys, "platform", "linux")
+    monkeypatch.setenv("LD_LIBRARY_PATH", "/tmp/_MEI123")
+    monkeypatch.setenv("LD_LIBRARY_PATH_ORIG", "/usr/lib/puvodni")
+    okno.oprav_prostredi()
+    import os
+    assert os.environ["LD_LIBRARY_PATH"] == "/usr/lib/puvodni" and "LD_LIBRARY_PATH_ORIG" not in os.environ

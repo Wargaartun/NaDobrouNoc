@@ -7,13 +7,18 @@ Co udělá:
     Zavření okna server také vypne.
 
 Spuštění:  python3 okno.py [--port 8000]
+           python3 okno.py --kontrola   (spustí server, ověří, že odpovídá, a skončí – pro testy sestavení)
 Okno používá tkinter – na Linux Mintu: sudo apt install python3-tk
 """
 import argparse
+import json
 import os
+import sys
 import threading
 import tkinter as tk
+import urllib.request
 import webbrowser
+from datetime import datetime
 from tkinter import messagebox
 
 import cesty
@@ -35,11 +40,62 @@ def spust_server(prvni_port: int):
     raise OSError(f"Nenašel jsem volný port ({prvni_port}–{prvni_port + 9}): {chyba}")
 
 
+def nastav_vypis() -> None:
+    """Zabalený program (hlavně na Windows bez konzole) píše výpis do server.log v datové složce."""
+    if not cesty.ZABALENO and sys.stdout is not None and sys.stderr is not None:
+        return
+    slozka = cesty.slozka_dat()
+    slozka.mkdir(parents=True, exist_ok=True)
+    log = slozka / "server.log"
+    if log.exists() and log.stat().st_size > 1_000_000:   # log nenecháme růst donekonečna
+        log.replace(slozka / "server.log.1")
+    soubor = open(log, "a", encoding="utf-8", buffering=1)  # noqa: SIM115 – otevřený po celou dobu běhu
+    soubor.write(f"===== {datetime.now():%Y-%m-%d %H:%M:%S} spuštění {cesty.NAZEV} {cesty.VERZE} =====\n")
+    sys.stdout = sys.stderr = soubor
+
+
+def oprav_prostredi() -> None:
+    """Zabalený program na Linuxu nastaví LD_LIBRARY_PATH na své knihovny. Prohlížeč, který
+    otevíráme, by je zdědil a mohl by spadnout – pro spouštěné programy vrátíme původní hodnotu."""
+    if cesty.ZABALENO and sys.platform.startswith("linux"):
+        puvodni = os.environ.pop("LD_LIBRARY_PATH_ORIG", None)
+        if puvodni:
+            os.environ["LD_LIBRARY_PATH"] = puvodni
+        else:
+            os.environ.pop("LD_LIBRARY_PATH", None)
+
+
+def kontrola(prvni_port: int) -> int:
+    """Spustí server, ověří stránku i API a skončí. Návratový kód 0 = v pořádku (test sestavení)."""
+    srv, port = spust_server(prvni_port)
+    if srv is None:
+        print(f"Na portu {port} už aplikace běží.", flush=True)
+        return 1
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    try:
+        with urllib.request.urlopen(f"http://127.0.0.1:{port}/api/stav", timeout=10) as r:
+            stav = json.loads(r.read())
+        with urllib.request.urlopen(f"http://127.0.0.1:{port}/", timeout=10) as r:
+            stranka = r.read().decode("utf-8")
+        ok = stav.get("nazev") == cesty.NAZEV and stav.get("verze") == cesty.VERZE and cesty.NAZEV in stranka
+        print(f"Kontrola {'OK' if ok else 'SELHALA'}: {cesty.NAZEV} {stav.get('verze')}, data {stav.get('data')}", flush=True)
+        return 0 if ok else 1
+    finally:
+        srv.shutdown()
+        srv.server_close()
+
+
 def main():
     p = argparse.ArgumentParser(description=f"{cesty.NAZEV} – server s okénkem")
     p.add_argument("--port", type=int, default=8000)
     p.add_argument("--neotvirat", action="store_true", help="neotvírat prohlížeč (pro testy)")
+    p.add_argument("--kontrola", action="store_true", help="ověřit, že server běží, a skončit")
     a = p.parse_args()
+
+    nastav_vypis()
+    oprav_prostredi()
+    if a.kontrola:
+        sys.exit(kontrola(a.port))
 
     try:
         srv, port = spust_server(a.port)
@@ -64,6 +120,11 @@ def main():
     okno.title(cesty.NAZEV)
     okno.configure(bg=BARVY["pozadi"], padx=28, pady=22)
     okno.resizable(False, False)
+    try:
+        ikona = tk.PhotoImage(file=str(cesty.SLOZKA_PROGRAMU / "static" / "ikona.png"))
+        okno.iconphoto(True, ikona)
+    except tk.TclError:
+        pass   # ikona okna není nutná
 
     def zastavit():
         tl_stop.configure(text="Zastavuji…", state="disabled")

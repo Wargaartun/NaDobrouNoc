@@ -1,5 +1,18 @@
 # Změny
 
+## 0.6.0 – instalátory
+
+- Instalátor pro **Windows** (Inno Setup): instalace jen pro aktuálního uživatele bez práv správce,
+  ikona v nabídce Start a na ploše, česky, aktualizace přes starou verzi a odinstalace (data zůstanou).
+- **AppImage pro Linux** – jeden soubor, nic se neinstaluje.
+- Sestavení na GitHubu (PyInstaller, bez Pythonu u uživatele) s kontrolním spuštěním zabaleného
+  programu, tichou instalací a odinstalací na Windows; vydání se zakládá jako koncept s návodem
+  a kontrolními součty.
+- Zabalený program píše výpis do `server.log` v datové složce (na Windows nemá konzoli).
+- Ikona aplikace (`.ico`, `.png`) a ikona okna.
+- `okno.py --kontrola`: spustí server, ověří ho a skončí (pro testy sestavení).
+- Linux: otevíraný prohlížeč nezdědí knihovny zabaleného programu.
+
 ## 0.5.0 – první verze v repozitáři
 
 - Hodnoty pro web ČT (otisk dotazu `GetEpisodes`, verze klienta, adresy) jsou v `ct_nastaveni.json`.

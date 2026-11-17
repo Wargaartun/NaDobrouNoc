@@ -14,9 +14,11 @@ import sys
 from pathlib import Path
 
 NAZEV = "Na dobrou noc"
-VERZE = "0.5.0"
+VERZE = "0.6.0"
 REPOZITAR = "Wargaartun/NaDobrouNoc"
-SLOZKA_PROGRAMU = Path(__file__).resolve().parent
+# Zabalený program (PyInstaller) má své soubory v sys._MEIPASS, jinak leží vedle tohoto souboru.
+ZABALENO = getattr(sys, "frozen", False)
+SLOZKA_PROGRAMU = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent))
 
 
 def slozka_dat() -> Path:
